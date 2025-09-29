@@ -1,6 +1,21 @@
 import React, { useMemo, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from "react-router-dom";
 import "./index.css";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 // Layout and UI Components
 const Header = () => {
@@ -50,9 +65,7 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
-      <div className="px-3 py-3 text-xs text-muted border-t border-border">
-        v0.1 • © VizAI
-      </div>
+      <div className="px-3 py-3 text-xs text-muted border-t border-border">v0.1 • © VizAI</div>
     </aside>
   );
 };
@@ -68,12 +81,7 @@ function ThemeToggle() {
   }, [dark]);
 
   return (
-    <button
-      onClick={() => setDark((d) => !d)}
-      className="btn btn-primary"
-      aria-label="Toggle theme"
-      title="Toggle theme"
-    >
+    <button onClick={() => setDark((d) => !d)} className="btn btn-primary" aria-label="Toggle theme" title="Toggle theme">
       {dark ? "☀️ Light" : "🌙 Dark"}
     </button>
   );
@@ -99,9 +107,7 @@ function SummaryStat({ label, value, change, positive = true }) {
       <div className="mt-1 flex items-end gap-2">
         <div className="text-2xl font-extrabold">{value}</div>
         {change != null && (
-          <div className={`text-xs font-semibold ${positive ? "text-green-400" : "text-red-400"}`}>
-            {positive ? "▲" : "▼"} {change}
-          </div>
+          <div className={`text-xs font-semibold ${positive ? "text-green-400" : "text-red-400"}`}>{positive ? "▲" : "▼"} {change}</div>
         )}
       </div>
     </div>
@@ -115,7 +121,9 @@ const Table = ({ columns, data }) => {
         <thead>
           <tr className="text-left text-muted border-b border-border">
             {columns.map((c) => (
-              <th key={c.accessor} className="px-3 py-2 font-semibold">{c.Header}</th>
+              <th key={c.accessor} className="px-3 py-2 font-semibold">
+                {c.Header}
+              </th>
             ))}
           </tr>
         </thead>
@@ -156,53 +164,160 @@ const UploadButton = ({ onFiles }) => {
 
 // Pages
 const Dashboard = () => {
+  // Mock overall KPI metrics
   const metrics = useMemo(
     () => ({
-      datasets: 12,
-      images: 342,
-      accuracy: "84.6%",
-      mAP: "0.67",
+      totalVideos: 128,
+      accuracyPct: 92.4,
+      bearsDetected: 47,
+      mobileCount: 29,
+      nonMobileCount: 18,
     }),
     []
   );
 
-  const history = [
-    { id: "A-1021", name: "Retail Shelf", status: "Completed", accuracy: 0.86, time: "2m 14s" },
-    { id: "A-1020", name: "Street Cam", status: "Completed", accuracy: 0.81, time: "1m 02s" },
-    { id: "A-1019", name: "Factory Line", status: "Queued", accuracy: "-", time: "-" },
-  ];
-
-  // simple sparkline placeholder using unicode blocks
-  const Spark = ({ values }) => (
-    <div className="flex gap-0.5 text-primary/80">
-      {values.map((v, i) => (
-        <div key={i} style={{ height: `${v}%` }} className="w-1.5 bg-primary rounded-t" />
-      ))}
-    </div>
+  // Mock mobility distribution for bar chart
+  const mobilityBarData = useMemo(
+    () => [
+      { type: "Mobile", count: metrics.mobileCount },
+      { type: "Non-Mobile", count: metrics.nonMobileCount },
+    ],
+    [metrics.mobileCount, metrics.nonMobileCount]
   );
+
+  // Mock movement over time for line chart (e.g., number of movements detected per hour)
+  const movementLineData = useMemo(
+    () => [
+      { time: "08:00", movements: 2 },
+      { time: "09:00", movements: 4 },
+      { time: "10:00", movements: 6 },
+      { time: "11:00", movements: 5 },
+      { time: "12:00", movements: 7 },
+      { time: "13:00", movements: 9 },
+      { time: "14:00", movements: 6 },
+      { time: "15:00", movements: 8 },
+      { time: "16:00", movements: 10 },
+      { time: "17:00", movements: 7 },
+    ],
+    []
+  );
+
+  // Optional pie chart data for mobility distribution
+  const pieData = useMemo(
+    () => [
+      { name: "Mobile", value: metrics.mobileCount },
+      { name: "Non-Mobile", value: metrics.nonMobileCount },
+    ],
+    [metrics.mobileCount, metrics.nonMobileCount]
+  );
+
+  const COLORS = ["#F97316", "#374151"]; // primary orange and neutral surface-600
+
+  // Recent history stays for context
+  const history = [
+    { id: "A-1021", name: "Forest North", status: "Completed", accuracy: 0.93, time: "2m 14s" },
+    { id: "A-1020", name: "River Watch", status: "Completed", accuracy: 0.89, time: "1m 02s" },
+    { id: "A-1019", name: "Valley Cam", status: "Queued", accuracy: "-", time: "-" },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-4 gap-4">
-        <SummaryStat label="Datasets" value={metrics.datasets} change="+2" positive />
-        <SummaryStat label="Images" value={metrics.images} change="+37" positive />
-        <SummaryStat label="Accuracy" value={metrics.accuracy} change="+1.2%" positive />
-        <SummaryStat label="mAP@0.5" value={metrics.mAP} change="-0.03" positive={false} />
+      {/* Summary KPI cards */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <SummaryStat label="Total Videos Analyzed" value={metrics.totalVideos} change="+8" positive />
+        <SummaryStat label="Accuracy" value={`${metrics.accuracyPct.toFixed(1)}%`} change="+0.7%" positive />
+        <SummaryStat label="Bears Detected" value={metrics.bearsDetected} change="+3" positive />
       </div>
 
+      {/* Charts Row */}
+      <div className="grid xl:grid-cols-3 gap-6">
+        {/* Bar Chart: Mobile vs Non-Mobile */}
+        <Card title="Mobility Distribution (Bears)">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={mobilityBarData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="type" tick={{ fill: "rgba(255,255,255,0.7)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "rgba(255,255,255,0.7)" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "#111827", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#fff" }}
+                />
+                <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#F97316" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* Line Chart: Movement Over Time */}
+        <Card title="Bear Movement Over Time">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={movementLineData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="time" tick={{ fill: "rgba(255,255,255,0.7)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "rgba(255,255,255,0.7)" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "#111827", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#fff" }}
+                />
+                <Line type="monotone" dataKey="movements" stroke="#F97316" strokeWidth={3} dot={{ r: 3, stroke: "#000", strokeWidth: 1 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* Optional Pie Chart */}
+        <Card title="Mobility vs Non-Mobility (%)">
+          <div className="h-64 flex items-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip
+                  formatter={(val) => [`${val}`, "Count"]}
+                  contentStyle={{ background: "#111827", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#fff" }}
+                />
+                <Legend verticalAlign="bottom" height={24} wrapperStyle={{ color: "rgba(255,255,255,0.7)" }} />
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="45%"
+                  outerRadius={70}
+                  label={(e) => `${e.name} ${Math.round((e.value / (metrics.mobileCount + metrics.nonMobileCount)) * 100)}%`}
+                  labelLine={false}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#111827" />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      {/* Existing Performance + Recent Analyses */}
       <div className="grid lg:grid-cols-3 gap-6">
         <Card title="Model Performance">
           <div className="grid grid-cols-2 gap-6">
             <div>
               <div className="text-sm text-muted mb-2">Accuracy Trend</div>
-              <Spark values={[10, 40, 30, 60, 45, 70, 80, 65, 85]} />
+              <div className="flex gap-0.5 text-primary/80 items-end h-16">
+                {[10, 40, 30, 60, 45, 70, 80, 65, 85].map((v, i) => (
+                  <div key={i} style={{ height: `${v}%` }} className="w-1.5 bg-primary rounded-t" />
+                ))}
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted mb-2">Inference Time (ms)</div>
-              <Spark values={[80, 60, 70, 55, 65, 50, 45, 60, 40]} />
+              <div className="flex gap-0.5 text-primary/80 items-end h-16">
+                {[80, 60, 70, 55, 65, 50, 45, 60, 40].map((v, i) => (
+                  <div key={i} style={{ height: `${v}%` }} className="w-1.5 bg-primary rounded-t" />
+                ))}
+              </div>
             </div>
           </div>
         </Card>
+
         <Card title="Recent Analyses" className="lg:col-span-2">
           <Table
             columns={[
@@ -233,17 +348,10 @@ const ImportPage = () => {
 
   return (
     <div className="space-y-6">
-      <Card
-        title="Import Images"
-        action={<UploadButton onFiles={onFiles} />}
-      >
-        <p className="text-sm text-muted mb-4">
-          Upload images to run detection. Supported formats: JPG, PNG. Max 10MB per file.
-        </p>
+      <Card title="Import Images" action={<UploadButton onFiles={onFiles} />}>
+        <p className="text-sm text-muted mb-4">Upload images to run detection. Supported formats: JPG, PNG. Max 10MB per file.</p>
         {files.length === 0 ? (
-          <div className="border border-dashed border-border rounded-xl p-8 text-center text-muted">
-            No files uploaded yet.
-          </div>
+          <div className="border border-dashed border-border rounded-xl p-8 text-center text-muted">No files uploaded yet.</div>
         ) : (
           <Table
             columns={[
