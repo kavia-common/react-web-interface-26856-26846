@@ -27,8 +27,6 @@ const Header = () => {
       </div>
       <div className="flex items-center gap-3">
         <div className="hidden md:flex items-center gap-2 text-muted">
-          <span className="badge">Electric Orange</span>
-          <span className="badge">Dark</span>
         </div>
         <ThemeToggle />
       </div>
@@ -148,12 +146,12 @@ const UploadButton = ({ onFiles }) => {
   return (
     <>
       <button className="btn btn-primary" onClick={() => inputRef.current?.click()}>
-        ⤴️ Upload Images
+        ⤴️ Upload Images/Videos
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="all files/*"
         multiple
         className="hidden"
         onChange={(e) => onFiles?.(Array.from(e.target.files || []))}
